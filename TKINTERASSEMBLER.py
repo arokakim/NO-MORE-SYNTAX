@@ -7,7 +7,6 @@ class CodeBuilder:
         self.root.geometry("900x600")
 
         # --- SIMULATED DATABASE ---
-        # This is where you'll eventually pull from your SQL database
         self.function_db = {
             "print": {"syntax": "print('{value}')", "color": "#4CAF50"},
             "calculate": {"syntax": "result = {value} * 2\nprint(result)", "color": "#FF9800"},
@@ -20,7 +19,6 @@ class CodeBuilder:
 
         tk.Label(self.block_panel, text="Block Library", bg="#2b2b2b", fg="white", font=("Arial", 12, "bold")).pack(pady=10)
 
-        # Create buttons dynamically based on our "database"
         for func_name in self.function_db:
             btn = tk.Button(
                 self.block_panel, 
@@ -42,26 +40,50 @@ class CodeBuilder:
         tk.Button(self.action_panel, text="Run Code", command=self.run_code, bg="#2196F3", fg="white", width=12).pack(side="left", padx=10, pady=10)
         tk.Button(self.action_panel, text="Export Script", command=self.export_code, bg="#757575", fg="white", width=12).pack(side="left", padx=10)
 
-        self.active_blocks = [] # Stores tuples: (function_name, entry_widget)
+        self.active_blocks = [] # Now stores lists: [function_name, entry_widget, frame_widget]
 
     def add_block(self, func_name):
         config = self.function_db[func_name]
+        
+        # Create a container for the block
         frame = tk.Frame(self.workspace, bg=config["color"], pady=5)
         frame.pack(pady=5, anchor="w", padx=20)
 
+        # Function Name Label
         tk.Label(frame, text=f"{func_name}:", bg=config["color"], fg="white", font=("Arial", 10, "bold")).pack(side="left", padx=5)
 
+        # Input Entry
         entry = tk.Entry(frame, width=30)
         entry.pack(side="left", padx=5)
 
-        # Track both the function type and the widget to extract data later
-        self.active_blocks.append((func_name, entry))
+        # Create a data reference for this specific block
+        block_data = [func_name, entry, frame]
+        self.active_blocks.append(block_data)
+
+        # DELETE BUTTON
+        # Uses a lambda to pass the specific block_data to the remove function
+        del_btn = tk.Button(
+            frame, 
+            text="✕", 
+            command=lambda: self.remove_block(block_data),
+            bg="#f44336", 
+            fg="white", 
+            font=("Arial", 8, "bold"),
+            bd=0,
+            padx=5
+        )
+        del_btn.pack(side="right", padx=10)
+
+    def remove_block(self, block_data):
+        # 1. Destroy the UI frame
+        block_data[2].destroy()
+        # 2. Remove the data from our tracking list
+        self.active_blocks.remove(block_data)
 
     def generate_full_script(self):
         full_script = []
-        for func_name, entry in self.active_blocks:
+        for func_name, entry, frame in self.active_blocks:
             val = entry.get()
-            # Pull syntax from DB and swap the placeholder
             template = self.function_db[func_name]["syntax"]
             line = template.replace("{value}", val)
             full_script.append(line)
@@ -70,7 +92,7 @@ class CodeBuilder:
     def run_code(self):
         print("\n--- Executing Visual Program ---")
         script = self.generate_full_script()
-        print(script) # In the real version, you might use exec(script)
+        print(script)
         print("--------------------------------")
 
     def export_code(self):
